@@ -23,10 +23,12 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = new_file.file_path.split('/')[-1]
     await new_file.download_to_drive(custom_path=f'img/{filename}')
 
-    with open(f'res/{filename}', 'wb') as res:
-        res.write(magic(f'img/{filename}'))
+    '''with open(f'res/{filename}', 'wb') as res:
+        res.write(magic(f'img/{filename}'))*/'''
 
-    await context.bot.send_document(chat_id=update.effective_chat.id, document=f'res/{filename}')
+    txt = magic(f'img/{filename}')
+
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
 
 
 if __name__ == '__main__':

@@ -1,19 +1,20 @@
+import easyocr
+import os
+
+
 def magic(filename):
-    with open(filename, 'rb') as original:
-        img = original.read()
+    txt = easy_ocr_recognition(filename)
+    return txt
 
     # TODO: the ML stuff
 
-    return img
 
 #Egor   |  |  |
 #       v  v  v
 
-import easyocr
-
 def easy_ocr_recognition(file_path):
   reader = easyocr.Reader(["ru", "en"])
-  result = reader.readtext(file_path, detail = 0)
+  result = reader.readtext(file_path, detail=0)
   
   string = ''
   for k in result:
