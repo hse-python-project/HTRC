@@ -20,11 +20,3 @@ def easy_ocr_recognition(file_path):
     string += k + ' '
 
   return string
-
-
-def main():
-  file_path = input('Введите путь до файла ')
-  print(easy_ocr_recognition(file_path = file_path))
-
-if __name__ == "__main__":
-  main()
