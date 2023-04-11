@@ -15,6 +15,10 @@ def magic_with_correction(filename):
     return res
 
 
+def magic(filename, mode):
+    return magic_with_correction(filename) if mode == 1 else magic_without_correction(filename)
+
+
 def correction(text):
     params = {'text': text, 'language': 'ru-RU', 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
@@ -27,6 +31,7 @@ def correction(text):
     for mistake in mistakes:
         text = text[:mistake['offset']] + mistake['better'][0] + text[mistake['offset'] + mistake['length']:]
     return text
+
 
 def easy_ocr_recognition(file_path):
     reader = easyocr.Reader(["ru", "en"])
