@@ -8,6 +8,7 @@ def magic_without_correction(filename):
     res = easy_ocr_recognition(filename)
     return res
 
+
 def magic_with_correction(filename):
     txt = easy_ocr_recognition(filename)
     res = correction(txt)
