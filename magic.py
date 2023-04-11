@@ -4,7 +4,11 @@ import requests
 CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
 
-def magic(filename):
+def magic_without_correction(filename):
+    res = easy_ocr_recognition(filename)
+    return res
+
+def magic_with_correction(filename):
     txt = easy_ocr_recognition(filename)
     res = correction(txt)
     return res
@@ -22,10 +26,6 @@ def correction(text):
     for mistake in mistakes:
         text = text[:mistake['offset']] + mistake['better'][0] + text[mistake['offset'] + mistake['length']:]
     return text
-
-# Egor   |  |  |
-#       v  v  v
-
 
 def easy_ocr_recognition(file_path):
     reader = easyocr.Reader(["ru", "en"])
