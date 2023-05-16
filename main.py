@@ -3,16 +3,26 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, filters, MessageHandler, CallbackQueryHandler
 
+import os
+import glob
+
 from magic import magic
 
 TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 
 mode = {}
+# TODO save upon exit
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
+
+def clear(path):
+    files = glob.glob(f'{path}/*')
+    for f in files:
+        os.remove(f)
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -39,10 +49,13 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     '''with open(f'res/{filename}', 'wb') as res:
         res.write(magic(f'img/{filename}'))*/'''
-
     txt = magic(f'img/{filename}', mode[user])
 
+    clear('./img')
+    clear('./res')
+
     await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+    await start(update, context)
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
