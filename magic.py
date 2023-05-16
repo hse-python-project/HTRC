@@ -1,6 +1,5 @@
 import easyocr
 import requests
-import pprint
 
 from recognition import recognise
 
@@ -18,21 +17,14 @@ def magic_with_correction(filename):
     return res
 
 
-def magic_magic_recognition(filename):
-    return recognise(read_path=filename, draw_type='rect')
-
-
 def magic(filename, mode):
-    res = magic_magic_recognition(filename=filename)
-    print(res)
-    return ' '.join(i['text'] for i in res['predictions'])
-    # return magic_with_correction(filename) if mode == 1 else magic_without_correction(filename)
+    res = recognise(read_path=filename, draw_type='rect')
+    return ' '.join(box['text'] for box in res['predictions'])
 
 
 def correction(text):
     params = {'text': text, 'language': 'ru-RU', 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
-    # pprint(response.json())
     grammar_mistakes = response.json()['response']['errors']
     params = {'text': text, 'language': 'ru-RU', 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/spelling", params=params)

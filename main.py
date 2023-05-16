@@ -6,12 +6,23 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, filte
 import os
 import glob
 
+import csv
+import atexit
+
 from magic import magic
 
 TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 
 mode = {}
-# TODO save upon exit
+
+
+def save_upon_exit():
+    '''with open('modes.csv', 'w', newline='') as file:
+        writer = csv.writer(file, delimiter=';', quotechar='"')
+        for user in mode:
+            writer.writerow([user, mode[user]])'''
+    return
+
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -47,8 +58,6 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = new_file.file_path.split('/')[-1]
     await new_file.download_to_drive(custom_path=f'img/{filename}')
 
-    '''with open(f'res/{filename}', 'wb') as res:
-        res.write(magic(f'img/{filename}'))*/'''
     txt = magic(f'img/{filename}', mode[user])
 
     clear('./img')
@@ -63,13 +72,17 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
 
     await query.answer()
-    print(mode[user], query.data)
 
     mode[user] = int(query.data)
     await start(update, context)
 
 
 if __name__ == '__main__':
+    '''with open('mode.csv', encoding="utf8") as file:
+        reader = csv.reader(file, delimiter=';', quotechar='"')
+    print(reader)
+    atexit.register(save_upon_exit)'''
+
     application = ApplicationBuilder().token(TOKEN).build()
 
     start_handler = CommandHandler('start', start)
