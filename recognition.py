@@ -442,7 +442,6 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
     else:
         return prediction
 
-
 def convert_to_text(prediction):
     sorted_words = sorted(prediction["predictions"], key=lambda w: w.center_y)
     lines = [[]]
@@ -455,34 +454,27 @@ def convert_to_text(prediction):
             mean_y = int((mean_y + word.center_y) / 2)
         lines[len(lines) - 1].append(word)
 
-    sorted_lines = [sorted(line, key=lambda w: w.center_x) for line in lines]
-
-    ans = ""
+    sorted_lines = [sorted(line, key=lambda w: w.x) for line in lines]
+    ans = ''
     for line in sorted_lines:
+        stack = []
         if len(line) == 1:
             if line[0].text != "." and line[0].text != "," and line[0].text != "-":
-                # print("word", line[0].text, "added as one symbol line")
-                ans += line[0].text + "\n"
+                ans += (line[0].text + '\n')
             continue
-        i = 0
-        while i + 1 < len(line):
-            # print("looking at pair", line[i].text, "and", line[i+1].text)
-            if intersection_area(line[i], line[i+1]) > 0.5 * min(line[i].area, line[i+1].area):
-                ans += (line[i].text if line[i].area > line[i+1].area else line[i+1].text) + " "
-                # print("word " + (line[i].text if line[i].area > line[i+1].area else line[i+1].text)+
-                #      " added as overlap over " + (line[i].text if line[i].area <= line[i+1].area else line[i+1].text))
-                i += 1
+        stack.append(line[0])
+        # ans += stack[-1].text + " "
+        for word in line:
+            if intersection_area(stack[-1], word) > 0.5 * min(stack[-1].area, word.area):
+                if stack[-1].area > word.area:
+                    continue
+                else:
+                    stack[-1] = word
             else:
-                ans += line[i].text + " "
-                # print("word", line[i].text, "added as normal")
-                if i + 2 == len(line):
-                    # print("added last word in line", line[i+1].text)
-                    ans += line[i + 1].text
-            i += 1
-
-        ans += "\n"
-        # ans += line[len(line)-1].text + "\n"
-
+                stack.append(word)
+        for word in stack:
+            ans += word.text + " "
+    ans += '\n'
     return ans
 
 
