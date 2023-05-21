@@ -2,9 +2,6 @@ import easyocr
 from correction import correction_with_punctuality, correct_text_final
 from recognition import recognise
 
-def magic_without_correction(filename):
-    res = easy_ocr_recognition(filename)
-    return res
 
 def magic_with_correction(filename):
     txt = easy_ocr_recognition(filename)
