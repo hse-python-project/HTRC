@@ -1,6 +1,6 @@
 import easyocr
 from correction import correction_with_punctuality, correct_text_final
-from recognition import recognise
+from recognition import recognise, convert_to_text
 
 
 def magic_with_correction(filename):
@@ -14,7 +14,7 @@ def magic_with_correction(filename):
 
 def magic(filename, mode):
     res = recognise(read_path=filename, draw_type='rect')
-    return ' '.join(box['text'] for box in res['predictions'])
+    return convert_to_text(res)
 
 
 def easy_ocr_recognition(file_path):
