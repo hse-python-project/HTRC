@@ -112,6 +112,7 @@ CTC_BLANK = '<BLANK>'
 def get_char_map(alphabet):
     """Make from string alphabet character to int dict.
     Add BLANK char from CTC loss and OOV char for out of vocabulary symbols."""
+    
     char_map = {value: idx + 2 for (idx, value) in enumerate(alphabet)}
     char_map[CTC_BLANK] = 0
     char_map[OOV_TOKEN] = 1
@@ -128,6 +129,7 @@ class Tokenizer:
 
     def encode(self, word_list):
         """Returns a list of encoded words (int)."""
+        
         enc_words = []
         for word in word_list:
             enc_words.append(
@@ -143,6 +145,7 @@ class Tokenizer:
     def decode(self, enc_word_list):
         """Returns a list of words (str) after removing blanks and collapsing
         repeating characters. Also skip out of vocabulary token."""
+        
         dec_words = []
         for word in enc_word_list:
             word_chars = ''
@@ -208,7 +211,7 @@ class BiLSTM(nn.Module):
         return out
 
 
-class CRNN(nn.Module):
+class RCNN(nn.Module):
     def __init__(
             self, number_class_symbols, time_feature_count=256, lstm_hidden=256,
             lstm_len=2,
@@ -269,8 +272,7 @@ class OcrPredictor:
     def __init__(self, model_path, config, device=DEVICE):
         self.tokenizer = Tokenizer(config['alphabet'])
         self.device = torch.device(device)
-        # load model
-        self.model = CRNN(number_class_symbols=self.tokenizer.get_num_chars())
+        self.model = RCNN(number_class_symbols=self.tokenizer.get_num_chars())
         self.model.load_state_dict(torch.load(model_path))
         self.model.to(self.device)
 
@@ -385,27 +387,27 @@ class Word:
         return f"({self.x}, {self.y}, {self.w}, {self.h}, c_x={self.center_x}, c_y={self.center_y}, {self.text})"
 
     def __str__(self):
-        return f"(c_x={self.center_x}, c_y={self.center_y}, {self.text})"
+        return f"(x={self.x}, y={self.y}, w={self.w}, h={self.h}, area={self.area}, {self.text})"
 
 
-def intersection_area (a, b):
+def intersection_area(a, b):
     x_min1 = a.x
-    y_min1 = a.y - a.h
+    y_min1 = a.y
     x_max1 = a.x + a.w
-    y_max1 = a.y
+    y_max1 = a.y + a.h
     x_min2 = b.x
-    y_min2 = b.y - b.h
+    y_min2 = b.y
     x_max2 = b.x + b.w
-    y_max2 = b.y
+    y_max2 = b.y + b.h
     left = max(x_min1, x_min2)
     bottom = max(y_min1, y_min2)
     right = min(x_max1, x_max2)
-    top = min (y_max1, y_max2)
+    top = min(y_max1, y_max2)
     width = right - left
     height = top - bottom
     if width <= 0 or height <= 0:
         return 0
-    return width*height
+    return width * height
 
 
 def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="contours"):
@@ -429,18 +431,14 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
     if output_type == "easy":
         easier_output = {'predictions': []}
-
         for word in prediction["predictions"]:
             x, y, w, h = cv2.boundingRect(np.array(word["polygon"]))
             easier_output["predictions"].append(Word(x, y, w, h, word["text"]))
-            # easier_output["predictions"].append({
-            #     'bounding_box': [x, y, w, h],
-            #     'text': word["text"]
-            # })
-
         return easier_output
+    
     else:
         return prediction
+
 
 def convert_to_text(prediction):
     sorted_words = sorted(prediction["predictions"], key=lambda w: w.center_y)
@@ -463,18 +461,19 @@ def convert_to_text(prediction):
                 ans += (line[0].text + '\n')
             continue
         stack.append(line[0])
-        # ans += stack[-1].text + " "
         for word in line:
             if intersection_area(stack[-1], word) > 0.5 * min(stack[-1].area, word.area):
-                if stack[-1].area > word.area:
-                    continue
-                else:
+                if stack[-1].area < word.area:
                     stack[-1] = word
+                else:
+                    continue
             else:
                 stack.append(word)
         for word in stack:
             ans += word.text + " "
-    ans += '\n'
+
+        ans += "\n"
+
     return ans
 
 
