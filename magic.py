@@ -1,19 +1,19 @@
 import easyocr
-from correction import correction_with_punctuality,correct_text_final
+from correction import correction_with_punctuality, correct_text_final
 from recognition import recognise
 
 def magic_without_correction(filename):
     res = easy_ocr_recognition(filename)
     return res
 
-
 def magic_with_correction(filename):
     txt = easy_ocr_recognition(filename)
     first_fix = correction_with_punctuality(txt)
-    result = correct_text_final(first_fix, "ru")  # добавить исправление языка текста на английский при необходимости
+    result = correct_text_final(first_fix)
     text = result[0]
     mistake_counter = result[1]
     return (text, mistake_counter)
+
 
 def magic(filename, mode):
     res = recognise(read_path=filename, draw_type='rect')

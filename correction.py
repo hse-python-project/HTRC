@@ -1,5 +1,6 @@
 from spellchecker import SpellChecker
 import requests
+from langdetect import detect
 
 CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
@@ -17,8 +18,8 @@ def correction_with_punctuality(text):
     return text
 
 
-def correct_text_final(text, text_language="ru"):
-    speller = SpellChecker(language=text_language)
+def correct_text_final(text):
+    speller = SpellChecker(language=detect(text))
     old_text_version = text.split()
     grammar_fixed_text = []
     punctual_symbols = [',', '.', '?', '-', '!', '...', ';', ':']
