@@ -21,10 +21,10 @@ logger.setLevel(logging.CRITICAL)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-TEST_IMAGES_PATH = './img'
-SAVE_PATH = './res'
-SEGM_MODEL_PATH = "./Models/model_0000999.pth"
-OCR_MODEL_PATH = "./Models/ocr-model-last.ckpt"
+TEST_IMAGES_PATH = 'img'
+SAVE_PATH = 'res'
+SEGM_MODEL_PATH = "Models/model_0000999.pth"
+OCR_MODEL_PATH = "Models/ocr-model-last.ckpt"
 
 config_json = {
     "alphabet": r'!"%\'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPRSTUVWXY['
@@ -112,6 +112,7 @@ CTC_BLANK = '<BLANK>'
 def get_char_map(alphabet):
     """Make from string alphabet character to int dict.
     Add BLANK char from CTC loss and OOV char for out of vocabulary symbols."""
+    
     char_map = {value: idx + 2 for (idx, value) in enumerate(alphabet)}
     char_map[CTC_BLANK] = 0
     char_map[OOV_TOKEN] = 1
@@ -128,6 +129,7 @@ class Tokenizer:
 
     def encode(self, word_list):
         """Returns a list of encoded words (int)."""
+        
         enc_words = []
         for word in word_list:
             enc_words.append(
@@ -143,6 +145,7 @@ class Tokenizer:
     def decode(self, enc_word_list):
         """Returns a list of words (str) after removing blanks and collapsing
         repeating characters. Also skip out of vocabulary token."""
+        
         dec_words = []
         for word in enc_word_list:
             word_chars = ''
@@ -159,31 +162,6 @@ class Tokenizer:
         return dec_words
 
 
-class Normalize:
-    def __call__(self, img):
-        img = img.astype(np.float32) / 255
-        return img
-
-
-class ToTensor:
-    def __call__(self, arr):
-        arr = torch.from_numpy(arr)
-        return arr
-
-
-class MoveChannels:
-    """Move the channel axis to the zero position as required in pytorch."""
-
-    def __init__(self, to_channels_first=True):
-        self.to_channels_first = to_channels_first
-
-    def __call__(self, image):
-        if self.to_channels_first:
-            return np.moveaxis(image, -1, 0)
-        else:
-            return np.moveaxis(image, 0, -1)
-
-
 class ImageResize:
     def __init__(self, height, width):
         self.height = height
@@ -195,14 +173,19 @@ class ImageResize:
         return image
 
 
-def get_val_transforms(height, width):
-    transforms = torchvision.transforms.Compose([
-        ImageResize(height, width),
-        MoveChannels(to_channels_first=True),
-        Normalize(),
-        ToTensor()
-    ])
-    return transforms
+class MoveChannels:
+    def __call__(self, image):
+        return np.moveaxis(image, -1, 0)
+
+
+class Normalize:
+    def __call__(self, img):
+        return img.astype(np.float32) / 255
+
+
+class ToTensor:
+    def __call__(self, arr):
+        return torch.from_numpy(arr)
 
 
 def get_resnet34_backbone():
@@ -218,14 +201,17 @@ class BiLSTM(nn.Module):
         super().__init__()
         self.lstm = nn.LSTM(
             input_size, hidden_size, num_layers,
-            dropout=dropout, batch_first=True, bidirectional=True)
+            dropout=dropout,
+            batch_first=True,
+            bidirectional=True
+        )
 
     def forward(self, x):
         out, _ = self.lstm(x)
         return out
 
 
-class CRNN(nn.Module):
+class RCNN(nn.Module):
     def __init__(
             self, number_class_symbols, time_feature_count=256, lstm_hidden=256,
             lstm_len=2,
@@ -266,7 +252,12 @@ def predict(images, model, tokenizer, device):
 
 class InferenceTransform:
     def __init__(self, height, width):
-        self.transforms = get_val_transforms(height, width)
+        self.transforms = torchvision.transforms.Compose([
+            ImageResize(height, width),
+            MoveChannels(),
+            Normalize(),
+            ToTensor()
+        ])
 
     def __call__(self, images):
         transformed_images = []
@@ -281,8 +272,7 @@ class OcrPredictor:
     def __init__(self, model_path, config, device=DEVICE):
         self.tokenizer = Tokenizer(config['alphabet'])
         self.device = torch.device(device)
-        # load model
-        self.model = CRNN(number_class_symbols=self.tokenizer.get_num_chars())
+        self.model = RCNN(number_class_symbols=self.tokenizer.get_num_chars())
         self.model.load_state_dict(torch.load(model_path))
         self.model.to(self.device)
 
@@ -366,18 +356,58 @@ def visualise_recognition(img, pred_data, font_path, font_coefficient=50, draw_t
     for prediction in pred_data['predictions']:
         polygon = prediction['polygon']
         pred_text = prediction['text']
-        '''if draw_type == "contours":
+
+        if draw_type == "contours":
             cv2.drawContours(img, np.array([polygon]), -1, (150, 250, 0), 2)
         else:
-            cv2.rectangle(img, cv2.boundingRect(np.array([polygon])), (150, 250, 0), 2)'''
-        cv2.drawContours(img, np.array([polygon]), -1, (150, 250, 0), 2) if draw_type == "contours" else\
             cv2.rectangle(img, cv2.boundingRect(np.array([polygon])), (150, 250, 0), 2)
-        x, y, _, _ = cv2.boundingRect(np.array([polygon]))
+
+        x, y, w, h = cv2.boundingRect(np.array([polygon]))
+        cv2.circle(img, (x, y), 4, (0, 0, 250), -1)
+        cv2.circle(img, (int(x + w / 2), int(y + h / 2)), 4, (250, 0, 200), -1)
         draw.text((x, y), pred_text, fill=0, font=font)
 
     vis_img = np.array(empty_img)
     vis = np.concatenate((img, vis_img), axis=1)
     return vis
+
+
+class Word:
+    def __init__(self, x, y, w, h, text):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.text = text
+        self.center_x = int(x + w / 2)
+        self.center_y = int(y + h / 2)
+        self.area = w * h
+
+    def __repr__(self):
+        return f"({self.x}, {self.y}, {self.w}, {self.h}, c_x={self.center_x}, c_y={self.center_y}, {self.text})"
+
+    def __str__(self):
+        return f"(x={self.x}, y={self.y}, w={self.w}, h={self.h}, area={self.area}, {self.text})"
+
+
+def intersection_area(a, b):
+    x_min1 = a.x
+    y_min1 = a.y
+    x_max1 = a.x + a.w
+    y_max1 = a.y + a.h
+    x_min2 = b.x
+    y_min2 = b.y
+    x_max2 = b.x + b.w
+    y_max2 = b.y + b.h
+    left = max(x_min1, x_min2)
+    bottom = max(y_min1, y_min2)
+    right = min(x_max1, x_max2)
+    top = min(y_max1, y_max2)
+    width = right - left
+    height = top - bottom
+    if width <= 0 or height <= 0:
+        return 0
+    return width * height
 
 
 def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="contours"):
@@ -401,29 +431,67 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
     if output_type == "easy":
         easier_output = {'predictions': []}
-
         for word in prediction["predictions"]:
-            x, y, _, _ = cv2.boundingRect(np.array(word["polygon"]))
-            easier_output["predictions"].append({
-                'bounding_box': [x, y],
-                'text': word["text"]
-            })
-
-        print(easier_output)
+            x, y, w, h = cv2.boundingRect(np.array(word["polygon"]))
+            easier_output["predictions"].append(Word(x, y, w, h, word["text"]))
         return easier_output
+    
     else:
         return prediction
 
 
+def convert_to_text(prediction):
+    sorted_words = sorted(prediction["predictions"], key=lambda w: w.center_y)
+    lines = [[]]
+    mean_y = sorted_words[0].center_y
+    for word in sorted_words:
+        if word.center_y > int(mean_y + word.h / 2):
+            lines.append([])
+            mean_y = word.center_y
+        else:
+            mean_y = int((mean_y + word.center_y) / 2)
+        lines[len(lines) - 1].append(word)
+
+    sorted_lines = [sorted(line, key=lambda w: w.x) for line in lines]
+    ans = ''
+    for line in sorted_lines:
+        stack = []
+        if len(line) == 1:
+            if line[0].text != "." and line[0].text != "," and line[0].text != "-":
+                ans += (line[0].text + '\n')
+            continue
+        stack.append(line[0])
+        for word in line:
+            if intersection_area(stack[-1], word) > 0.5 * min(stack[-1].area, word.area):
+                if stack[-1].area < word.area:
+                    stack[-1] = word
+                else:
+                    continue
+            else:
+                stack.append(word)
+        for word in stack:
+            ans += word.text + " "
+
+        ans += "\n"
+
+    return ans
+
+
 def main():
-    pred_data = {}
     for img_name in tqdm(os.listdir(TEST_IMAGES_PATH)):
-        pred_data[img_name] = recognise(read_path=os.path.join(TEST_IMAGES_PATH, img_name),
-                                        save_path=SAVE_PATH,
-                                        output_type="full",
-                                        draw_type="rect")
-    with open(os.path.join(SAVE_PATH, "output.json"), "w") as f:
-        json.dump(pred_data, f)
+        pred_data = recognise(read_path=os.path.join(TEST_IMAGES_PATH, img_name),
+                              save_path=SAVE_PATH,
+                              output_type="easy",
+                              draw_type="rect"
+                              )
+        print(convert_to_text(pred_data))
+        # pred_data[img_name] = recognise(read_path=os.path.join(TEST_IMAGES_PATH, img_name),
+        #                                 save_path=SAVE_PATH,
+        #                                 output_type="easy",
+        #                                 draw_type="rect")
+
+    # with open(os.path.join(SAVE_PATH, "output.json"), "w") as f:
+    #    json.dump(pred_data, f)
 
 
 if __name__ == '__main__':

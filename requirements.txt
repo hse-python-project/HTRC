@@ -26,3 +26,5 @@ scipy~=1.9.1
 termcolor~=2.3.0
 packaging~=23.0
 cloudpickle~=2.2.1
+spellchecker~=0.4
+langdetect~=1.0.9
