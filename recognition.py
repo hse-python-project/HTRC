@@ -23,10 +23,12 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 TEST_IMAGES_PATH = 'img'
 SAVE_PATH = 'res'
-SEGM_MODEL_PATH = "Models/model_0000999.pth"
+SEGM_MODEL_PATH = "Models/model_0059999.pth"
 OCR_MODEL_PATH = "Models/ocr-model-last.ckpt"
+# OCR_MODEL_PATH = "Models/cool_model.ckpt"
 
 config_json = {
+    # "alphabet": """@ !"%'()+,-./0123456789:;=?EFIMNOSTW[]abcdefghiklmnopqrstuvwxyАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё№""",
     "alphabet": r'!"%\'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPRSTUVWXY['
                 r']_abcdefghijklmnopqrstuvwxyz|}ЁАБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё№',
     "image": {
@@ -112,7 +114,7 @@ CTC_BLANK = '<BLANK>'
 def get_char_map(alphabet):
     """Make from string alphabet character to int dict.
     Add BLANK char from CTC loss and OOV char for out of vocabulary symbols."""
-    
+
     char_map = {value: idx + 2 for (idx, value) in enumerate(alphabet)}
     char_map[CTC_BLANK] = 0
     char_map[OOV_TOKEN] = 1
@@ -129,7 +131,7 @@ class Tokenizer:
 
     def encode(self, word_list):
         """Returns a list of encoded words (int)."""
-        
+
         enc_words = []
         for word in word_list:
             enc_words.append(
@@ -145,7 +147,7 @@ class Tokenizer:
     def decode(self, enc_word_list):
         """Returns a list of words (str) after removing blanks and collapsing
         repeating characters. Also skip out of vocabulary token."""
-        
+
         dec_words = []
         for word in enc_word_list:
             word_chars = ''
@@ -212,6 +214,36 @@ class BiLSTM(nn.Module):
 
 
 class RCNN(nn.Module):
+    # def __init__(
+    #         self, number_class_symbols, out_len=32
+    # ):
+    #     super().__init__()
+    #     self.feature_extractor = get_resnet34_backbone()
+    #     self.avg_pool = nn.AdaptiveAvgPool2d(
+    #         (512, out_len))
+    #     self.bilstm = BiLSTM(512, 256, 2)
+    #     self.classifier = nn.Sequential(
+    #         nn.Linear(512, 256),
+    #         nn.GELU(),
+    #         nn.Dropout(0.1),
+    #         nn.Linear(256, number_class_symbols)
+    #     )
+    #
+    # def forward(self, x, return_x=False):
+    #     feature = self.feature_extractor(x)
+    #     b, c, h, w = feature.size()
+    #     feature = feature.view(b, c * h, w)
+    #     feature = self.avg_pool(feature)
+    #     feature = feature.transpose(1, 2)
+    #     out = self.bilstm(feature)
+    #     # print(x.shape)
+    #     out = self.classifier(out)
+    #     x1 = nn.functional.log_softmax(out, dim=2).permute(1, 0, 2)
+    #     if return_x:
+    #         return x1, out
+    #     else:
+    #         return x1
+
     def __init__(
             self, number_class_symbols, time_feature_count=256, lstm_hidden=256,
             lstm_len=2,
@@ -345,6 +377,32 @@ def get_pipeline_predictor():
     )
 
 
+def add_border(img):
+    height, width, _ = img.shape
+    top_border_size = int(height * 0.25)
+    side_border_size = int(((top_border_size * 2 + height) / 9 * 16 - width) / 2)
+    white = [255, 255, 255]
+    border = cv2.copyMakeBorder(
+        img,
+        top=top_border_size,
+        bottom=top_border_size,
+        left=side_border_size,
+        right=side_border_size,
+        borderType=cv2.BORDER_CONSTANT,
+        value=white
+    )
+    border = cv2.copyMakeBorder(
+        border,
+        top=10,
+        bottom=10,
+        left=10,
+        right=10,
+        borderType=cv2.BORDER_CONSTANT,
+        value=[0, 0, 0]
+    )
+    return border
+
+
 def visualise_recognition(img, pred_data, font_path, font_coefficient=50, draw_type="contours"):
     """Draw concatenation of original image with drawn contours/rectangles and recognised words."""
 
@@ -418,6 +476,7 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
     pipeline_predictor = get_pipeline_predictor()
     image = cv2.imread(read_path)
+    image = add_border(image)
     prediction = pipeline_predictor(image)
     vis = visualise_recognition(image, prediction, 'font.otf', 50, draw_type)
 
@@ -435,7 +494,7 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
             x, y, w, h = cv2.boundingRect(np.array(word["polygon"]))
             easier_output["predictions"].append(Word(x, y, w, h, word["text"]))
         return easier_output
-    
+
     else:
         return prediction
 
@@ -445,7 +504,7 @@ def convert_to_text(prediction):
     lines = [[]]
     mean_y = sorted_words[0].center_y
     for word in sorted_words:
-        if word.center_y > int(mean_y + word.h / 2):
+        if word.center_y > int(mean_y + word.h / 1.8):
             lines.append([])
             mean_y = word.center_y
         else:
@@ -474,6 +533,10 @@ def convert_to_text(prediction):
 
         ans += "\n"
 
+    ans = ans.replace(' ,', ',').replace(' .', '.').replace(' )', ')').replace('\n.', '\n').replace('\n,', '\n')
+    ans = ans.replace('\n ', '\n').replace(',', ', ').replace('  ', ' ')
+    ans = ans.replace('\n.', '\n').replace('\n,', '\n').replace('\n\n', '\n').replace('\n \n', '\n')
+    ans = ans[:-1]
     return ans
 
 
@@ -484,7 +547,7 @@ def main():
                               output_type="easy",
                               draw_type="rect"
                               )
-        print(convert_to_text(pred_data))
+        print("Image " + img_name + ':\n"' + convert_to_text(pred_data) + '"')
         # pred_data[img_name] = recognise(read_path=os.path.join(TEST_IMAGES_PATH, img_name),
         #                                 save_path=SAVE_PATH,
         #                                 output_type="easy",
