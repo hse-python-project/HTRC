@@ -17,10 +17,10 @@ mode = {}
 
 
 def save_upon_exit():
-    '''with open('modes.csv', 'w', newline='') as file:
+    """with open('modes.csv', 'w', newline='') as file:
         writer = csv.writer(file, delimiter=';', quotechar='"')
         for user in mode:
-            writer.writerow([user, mode[user]])'''
+            writer.writerow([user, mode[user]])"""
     return
 
 
@@ -42,11 +42,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         mode[user] = 1
     keyboard = []
     if mode[user] == 1:
-        text = "Отправь мне картинку с текстом, и я его исправлю!"
-        keyboard.append([InlineKeyboardButton("Лучше не исправляй", callback_data=2)])
+        text = "Отправь мне картинку с текстом, и я его распознаю и исправлю!"
+        keyboard.append([InlineKeyboardButton("Выключить исправления ❌", callback_data=2)])
     else:
-        text = "Отправь мне картинку с текстом, и я его не исправлю!"
-        keyboard.append([InlineKeyboardButton("Лучше исправь", callback_data=1)])
+        text = "Отправь мне картинку с текстом, и я его распознаю!"
+        keyboard.append([InlineKeyboardButton("Включить исправления ✅", callback_data=1)])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=user, text=text, reply_markup=reply_markup)
 
@@ -58,8 +58,9 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = new_file.file_path.split('/')[-1]
     await new_file.download_to_drive(custom_path=f'img/{filename}')
 
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Подождите, ваше изображение обрабатывается.")
     txt = magic(f'img/{filename}', mode[user])
-
+    print(txt)
     clear('./img')
     clear('./res')
 
