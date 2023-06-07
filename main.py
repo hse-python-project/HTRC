@@ -58,13 +58,13 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     filename = new_file.file_path.split('/')[-1]
     await new_file.download_to_drive(custom_path=f'img/{filename}')
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Подождите, ваше изображение обрабатывается.")
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="⏳ Подождите, ваше изображение обрабатывается...")
     txt = magic(f'img/{filename}', mode[user])
     print(txt)
     clear('./img')
     clear('./res')
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
     await start(update, context)
 
 
