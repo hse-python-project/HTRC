@@ -6,13 +6,10 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, filte
 import os
 import glob
 
-import csv
-import atexit
-
 from magic import magic
 
-TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 
+TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 mode = {}
 
 
@@ -95,7 +92,3 @@ if __name__ == '__main__':
     application.add_handler(CallbackQueryHandler(button))
 
     application.run_polling()
-
-    while True:
-        cmd = input()
-        print(cmd)
