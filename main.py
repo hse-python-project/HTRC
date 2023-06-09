@@ -92,6 +92,7 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         txt = update.message.text
         res = magic(text=txt, mode=3)
         await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
+        await start(update, context)
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
