@@ -30,18 +30,18 @@ def correct_mistakes(text, mistakes):
     for mistake in mistakes:
         if not mistake['better']:
             continue
-        # print(corrected_text, " -> ", end='')
+        print(corrected_text, " -> ", end='')
         corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake[
             'better'][0] + " </i> " + corrected_text[mistake['offset'] + mistake['length']:]
-        # print(corrected_text)
+        print(corrected_text)
     return corrected_text
 
 
 def correction(text):
     language = "ru-RU" if detect(text) == "ru" else "en-GB"
 
-    if language == "en-GB":
-        return english_correction(text)
+    #if language == "en-GB":
+    #   return english_correction(text)
 
     params = {'text': text, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
@@ -74,7 +74,8 @@ def main():
 о гракых панятит аллтики овых в хрухеч. о """
 
     txt1 = 'На этом примере можно увиддть что исправленея работают харашо но не всеггда.'
-    print(correction(txt))
+    txt2 = 'Helo, howw ar yuo'
+    print(correction(txt2))
 
 
 if __name__ == '__main__':

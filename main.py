@@ -36,33 +36,55 @@ def clear(path):
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
     if user not in mode.keys():
-        mode[user] = 1
+        mode[user] = 0
     keyboard = []
-    if mode[user] == 1:
-        text = "Отправь мне картинку с текстом, и я его распознаю и исправлю!"
-        keyboard.append([InlineKeyboardButton("Выключить исправления ❌", callback_data=2)])
+    message = ['', "Отправь мне картинку с текстом, и я его распознаю и исправлю!",
+               "Отправь мне картинку с текстом, и я его распознаю!",
+               "Отправь мне текст, и я его исправлю!"]
+    if mode[user] == 0:
+        text = 'Пожалуйста, выберите режим:'
+        keyboard.append([InlineKeyboardButton("Распознать рукописный текст", callback_data=2)])
+        keyboard.append([InlineKeyboardButton("Распознать и исправить текст ✅", callback_data=1)])
+        keyboard.append([InlineKeyboardButton("Исправить печатный текст", callback_data=3)])
     else:
-        text = "Отправь мне картинку с текстом, и я его распознаю!"
-        keyboard.append([InlineKeyboardButton("Включить исправления ✅", callback_data=1)])
+        text = message[mode[user]]
+        keyboard.append([InlineKeyboardButton("Вернуться в меню", callback_data=0)])
     reply_markup = InlineKeyboardMarkup(keyboard)
     await context.bot.send_message(chat_id=user, text=text, reply_markup=reply_markup)
 
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
-    file_id = update.message.photo[-1].file_id
-    new_file = await context.bot.get_file(file_id)
-    filename = new_file.file_path.split('/')[-1]
-    await new_file.download_to_drive(custom_path=f'img/{filename}')
+    if mode[user] == 3:
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню", callback_data=0)]])
+        await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте печатный текст или смените режим!",
+                                       reply_markup=keyboard)
+    else:
+        file_id = update.message.photo[-1].file_id
+        new_file = await context.bot.get_file(file_id)
+        filename = new_file.file_path.split('/')[-1]
+        await new_file.download_to_drive(custom_path=f'img/{filename}')
 
-    await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
-    txt = magic(f'img/{filename}', mode.get(user, 1))
-    print(txt)
-    clear('./img')
-    clear('./res')
+        await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
+        txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
+        print(txt)
+        clear('./img')
+        clear('./res')
 
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
-    await start(update, context)
+        await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
+        await start(update, context)
+
+
+async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_chat.id
+    if mode[user] != 3:
+        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню", callback_data=0)]])
+        await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте картинку или смените режим!",
+                                       reply_markup=keyboard)
+    else:
+        txt = update.message.text
+        res = magic(text=txt, mode=3)
+        await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -88,6 +110,9 @@ if __name__ == '__main__':
 
     photo_handler = MessageHandler(filters.PHOTO & (~filters.COMMAND), photo)
     application.add_handler(photo_handler)
+
+    text_handler = MessageHandler(filters.TEXT & (~filters.COMMAND), text)
+    application.add_handler(text_handler)
 
     application.add_handler(CallbackQueryHandler(button))
 
