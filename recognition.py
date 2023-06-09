@@ -24,7 +24,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 TEST_IMAGES_PATH = 'img'
 SAVE_PATH = 'res'
 SEGM_MODEL_PATH = "Models/model_0059999.pth"
-OCR_MODEL_PATH = "Models/ocr-model-last.ckpt"
+OCR_MODEL_PATH = "Models/baseline_model_self_trained.ckpt"
 # OCR_MODEL_PATH = "Models/cool_model.ckpt"
 
 config_json = {
@@ -377,9 +377,9 @@ def get_pipeline_predictor():
     )
 
 
-def add_border(img):
+def add_border(img, size):
     height, width, _ = img.shape
-    top_border_size = int(height * 0.25)
+    top_border_size = int(height * size)
     side_border_size = int(((top_border_size * 2 + height) / 9 * 16 - width) / 2)
     white = [255, 255, 255]
     border = cv2.copyMakeBorder(
@@ -449,6 +449,8 @@ class Word:
 
 
 def intersection_area(a, b):
+    """Finds intersection area of two given words."""
+    
     x_min1 = a.x
     y_min1 = a.y
     x_max1 = a.x + a.w
@@ -476,7 +478,7 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
     pipeline_predictor = get_pipeline_predictor()
     image = cv2.imread(read_path)
-    image = add_border(image)
+    image = add_border(image, size=0.6)
     prediction = pipeline_predictor(image)
     vis = visualise_recognition(image, prediction, 'font.otf', 50, draw_type)
 
@@ -500,6 +502,10 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
 
 def convert_to_text(prediction):
+    """Converts raw prediction to text with line handling."""
+
+    if not prediction['predictions']:
+        return "<b><i>Текст на картинке не найден.</i></b>"
     sorted_words = sorted(prediction["predictions"], key=lambda w: w.center_y)
     lines = [[]]
     mean_y = sorted_words[0].center_y
@@ -548,14 +554,8 @@ def main():
                               draw_type="rect"
                               )
         print("Image " + img_name + ':\n"' + convert_to_text(pred_data) + '"')
-        # pred_data[img_name] = recognise(read_path=os.path.join(TEST_IMAGES_PATH, img_name),
-        #                                 save_path=SAVE_PATH,
-        #                                 output_type="easy",
-        #                                 draw_type="rect")
-
-    # with open(os.path.join(SAVE_PATH, "output.json"), "w") as f:
-    #    json.dump(pred_data, f)
 
 
 if __name__ == '__main__':
     main()
+    
