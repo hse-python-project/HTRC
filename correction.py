@@ -6,6 +6,8 @@ ai21.api_key = 'ixlBVyHgdogp531oVryy4uw0hubfWAnf'
 
 
 def english_correction(text):
+    """Finds and corrects mistakes in a given text in English."""
+    
     response = ai21.GEC.execute(text=text)
     corrected_text = text
     corrections = response["corrections"]
@@ -19,29 +21,35 @@ CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
 
 def remove_extra_spaces(text):
+    """Removes extra spaces, which appeared after adding HTML tags."""
+
     text = text.replace(' <i> ', '<i>').replace(' </i> ', '</i>')
     return text
 
 
 def correct_mistakes(text, mistakes):
+    """Corrects a list of mistakes in a given text."""
+
     mistakes = sorted(mistakes, key=lambda x: x['offset'], reverse=True)
-    print(mistakes)
+    # print(mistakes)
     corrected_text = text
     for mistake in mistakes:
-        if not mistake['better']:
+        if not mistake['better'] or mistake['type'] == 'duplication':
             continue
-        print(corrected_text, " -> ", end='')
+        # print(corrected_text, " -> ", end='')
         corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake[
             'better'][0] + " </i> " + corrected_text[mistake['offset'] + mistake['length']:]
-        print(corrected_text)
+        # print(corrected_text)
     return corrected_text
 
 
 def correction(text):
+    """Finds and corrects mistakes in a given text."""
+
     language = "ru-RU" if detect(text) == "ru" else "en-GB"
 
-    #if language == "en-GB":
-    #   return english_correction(text)
+    if language == "en-GB":
+        return english_correction(text)
 
     params = {'text': text, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
