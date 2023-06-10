@@ -11,7 +11,6 @@ from magic import magic
 
 from time import sleep
 
-
 TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 mode = {}
 
@@ -63,23 +62,29 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте печатный текст или смените режим!",
                                        reply_markup=keyboard)
     else:
-        file_id = update.message.photo[-1].file_id
-        new_file = await context.bot.get_file(file_id)
-        filename = new_file.file_path.split('/')[-1]
-        await new_file.download_to_drive(custom_path=f'img/{filename}')
+        try:
+            file_id = update.message.photo[-1].file_id
+            new_file = await context.bot.get_file(file_id)
+            filename = new_file.file_path.split('/')[-1]
+            await new_file.download_to_drive(custom_path=f'img/{filename}')
 
-        await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
+            await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
 
-        await context.bot.sendChatAction(chat_id=update.message.chat_id, action=ChatAction.TYPING)
-        sleep(5)
+            await context.bot.sendChatAction(chat_id=update.message.chat_id, action=ChatAction.TYPING)
+            sleep(5)
 
-        txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
-        print(txt)
-        clear('./img')
-        clear('./res')
+            txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
+            print(txt)
+            clear('./img')
+            clear('./res')
 
-        await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
-        await start(update, context)
+            await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
+            await start(update, context)
+        except Exception:
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
+            await context.bot.send_message(chat_id=user,
+                                           text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                           reply_markup=keyboard)
 
 
 async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -89,10 +94,16 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте картинку или смените режим!",
                                        reply_markup=keyboard)
     else:
-        txt = update.message.text
-        res = magic(text=txt, mode=3)
-        await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
-        await start(update, context)
+        try:
+            txt = update.message.text
+            res = magic(text=txt, mode=3)
+            await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
+            await start(update, context)
+        except Exception:
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
+            await context.bot.send_message(chat_id=user,
+                                           text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                           reply_markup=keyboard)
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
