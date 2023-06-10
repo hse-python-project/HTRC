@@ -9,7 +9,6 @@ import glob
 
 from magic import magic
 
-from time import sleep
 
 TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 mode = {}
@@ -71,7 +70,6 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
 
             await context.bot.sendChatAction(chat_id=update.message.chat_id, action=ChatAction.TYPING)
-            sleep(5)
 
             txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
             print(txt)
