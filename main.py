@@ -56,6 +56,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
+    if mode.get(user, 0) == 0:
+        await start(update, context)
     if mode[user] == 3:
         keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
         await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте печатный текст или смените режим!",
