@@ -64,8 +64,8 @@ def correction(text):
 def yandex_corr(txt):
     language = "ru-RU" if detect(txt) == "ru" else "en-GB"
     if language == "en-GB":
-        print(detect(txt))
         return english_correction(txt)
+
     req = f"https://speller.yandex.net/services/spellservice.json/checkTexts?" + 'text=' + txt
     response = requests.get(req).json()[0]
     mistakes = []
@@ -78,11 +78,12 @@ def yandex_corr(txt):
             })
     txt = correct_mistakes(txt, mistakes)
     print('speller:', txt)
+
     params = {'text': txt, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
     grammar_mistakes = response.json()['response']['errors']
-
     txt = correct_mistakes(txt, grammar_mistakes)
+    print('grammar:', txt)
 
     res = remove_extra_spaces(txt)
     return res
