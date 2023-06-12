@@ -14,14 +14,6 @@ TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 mode = {}
 
 
-def save_upon_exit():
-    """with open('modes.csv', 'w', newline='') as file:
-        writer = csv.writer(file, delimiter=';', quotechar='"')
-        for user in mode:
-            writer.writerow([user, mode[user]])"""
-    return
-
-
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
@@ -117,10 +109,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    '''with open('mode.csv', encoding="utf8") as file:
-        reader = csv.reader(file, delimiter=';', quotechar='"')
-    print(reader)
-    atexit.register(save_upon_exit)'''
 
     application = ApplicationBuilder().token(TOKEN).build()
 

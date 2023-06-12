@@ -1,11 +1,9 @@
 import requests
 import ai21
 from langdetect import detect
-import quopri
-import pprint
-from pyaspeller import YandexSpeller
 
 ai21.api_key = 'ixlBVyHgdogp531oVryy4uw0hubfWAnf'
+CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
 
 def english_correction(text):
@@ -20,9 +18,6 @@ def english_correction(text):
     return corrected_text
 
 
-CORR_KEY = 'bOzCJsRYPqLTPwvy'
-
-
 def remove_extra_spaces(text):
     """Removes extra spaces, which appeared after adding HTML tags."""
 
@@ -34,16 +29,12 @@ def correct_mistakes(text, mistakes):
     """Corrects a list of mistakes in a given text."""
 
     mistakes = sorted(mistakes, key=lambda x: x['offset'], reverse=True)
-    # print(text)
-    # print(mistakes)
     corrected_text = text
     for mistake in mistakes:
         if not mistake['better'] or mistake['type'] == 'duplication':
             continue
-        # print(corrected_text, " -> ", end='')
         corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake[
             'better'][0] + " </i> " + corrected_text[mistake['offset'] + mistake['length']:]
-        # print(corrected_text)
     return corrected_text
 
 
@@ -58,7 +49,6 @@ def correction(text):
     params = {'text': text, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
     grammar_mistakes = response.json()['response']['errors']
-    # pprint.pprint(grammar_mistakes)
 
     text = correct_mistakes(text, grammar_mistakes)
 
@@ -71,17 +61,12 @@ def correction(text):
     return remove_extra_spaces(text)
 
 
-def encode(txt):
-    return '&text='.join(str(quopri.encodestring(bytes(txt, 'utf8'), quotetabs=True))[2:][:-1].replace('=', '%').split('\n'))
-
-
 def yandex_corr(txt):
     language = "ru-RU" if detect(txt) == "ru" else "en-GB"
     if language == "en-GB":
         print(detect(txt))
         return english_correction(txt)
     req = f"https://speller.yandex.net/services/spellservice.json/checkTexts?" + 'text=' + txt
-    # print(req)
     response = requests.get(req).json()[0]
     mistakes = []
     for mistake in response:
@@ -91,37 +76,16 @@ def yandex_corr(txt):
             'better': mistake['s'],
             'type': ''
             })
-    # pprint.pprint(mistakes)
     txt = correct_mistakes(txt, mistakes)
     print('speller:', txt)
     params = {'text': txt, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
     grammar_mistakes = response.json()['response']['errors']
-    # pprint.pprint(grammar_mistakes)
 
     txt = correct_mistakes(txt, grammar_mistakes)
 
     res = remove_extra_spaces(txt)
     return res
-
-    '''mistakes = sorted(mistakes, key=lambda x: x['offset'], reverse=True)
-    print(text)
-    # print(mistakes)
-    corrected_text = text
-    for mistake in mistakes:
-        if not mistake['better'] or mistake['type'] == 'duplication':
-            continue
-        # print(corrected_text, " -> ", end='')
-        corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake[
-            'better'][0] + " </i> " + corrected_text[mistake['offset'] + mistake['length']:]
-        # print(corrected_text)
-    return corrected_text
-
-    params = {'text': res, 'language': language, 'ai': 0, 'key': CORR_KEY}
-    response = requests.get(url="https://api.textgears.com/grammar", params=params)
-    grammar_mistakes = response.json()['response']['errors']
-    res = correct_mistakes(res, grammar_mistakes)
-    return res'''
 
 
 def main():
