@@ -62,7 +62,7 @@ def correction(text):
 
 
 def yandex_corr(txt):
-    """Finds and corrects mistakes ia a given text with YandexSpeller API"""
+    """Finds and corrects mistakes in a given text with YandexSpeller API"""
     language = "ru-RU" if detect(txt) == "ru" else "en-GB"
     if language == "en-GB":
         return english_correction(txt)
