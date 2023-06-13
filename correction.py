@@ -8,7 +8,7 @@ CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
 def english_correction(text):
     """Finds and corrects mistakes in a given text in English."""
-    
+
     response = ai21.GEC.execute(text=text)
     corrected_text = text
     corrections = response["corrections"]
@@ -21,7 +21,7 @@ def english_correction(text):
 def remove_extra_spaces(text):
     """Removes extra spaces, which appeared after adding HTML tags."""
 
-    text = text.replace(' <i> ', '<i>').replace(' </i> ', '</i>')
+    text = text.replace(' <i> ', '<i>').replace(' </i> ', '</i>').replace(' .', '.').replace(' ,', ',')
     return text
 
 
@@ -33,60 +33,42 @@ def correct_mistakes(text, mistakes):
     for mistake in mistakes:
         if not mistake['better'] or mistake['type'] == 'duplication':
             continue
-        corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake[
-            'better'][0] + " </i> " + corrected_text[mistake['offset'] + mistake['length']:]
+        corrected_text = corrected_text[:mistake["offset"]] + " <i> " + mistake['better'][0] + " </i> " + \
+                         corrected_text[mistake['offset'] + mistake['length']:]
     return corrected_text
 
 
-def correction(text):
-    """Finds and corrects mistakes in a given text."""
+def correct(txt):
+    """Finds and corrects mistakes in a given text with YandexSpeller API"""
 
-    language = "ru-RU" if detect(text) == "ru" else "en-GB"
-
-    if language == "en-GB":
-        return english_correction(text)
-
-    params = {'text': text, 'language': language, 'ai': 0, 'key': CORR_KEY}
-    response = requests.get(url="https://api.textgears.com/grammar", params=params)
-    grammar_mistakes = response.json()['response']['errors']
-
-    text = correct_mistakes(text, grammar_mistakes)
-
-    params = {'text': text, 'language': language, 'ai': 0, 'key': CORR_KEY}
-    response = requests.get(url="https://api.textgears.com/spelling", params=params)
-    spelling_mistakes = response.json()['response']['errors']
-
-    text = correct_mistakes(text, spelling_mistakes)
-
-    return remove_extra_spaces(text)
-
-
-def yandex_corr(txt):
-    """Finds and corrects mistakes ia a given text with YandexSpeller API"""
     language = "ru-RU" if detect(txt) == "ru" else "en-GB"
+
     if language == "en-GB":
         return english_correction(txt)
 
-    req = f"https://speller.yandex.net/services/spellservice.json/checkTexts?" + 'text=' + txt
-    response = requests.get(req).json()[0]
-    mistakes = []
+    response = requests.get(f"https://speller.yandex.net/services/spellservice.json/checkTexts?text={txt}").json()[0]
+
+    spelling_mistakes = []
     for mistake in response:
-        mistakes.append({
+        spelling_mistakes.append({
             'offset': mistake['pos'],
             'length': mistake['len'],
             'better': mistake['s'],
             'type': ''
-            })
-    txt = correct_mistakes(txt, mistakes)
+        })
+
+    txt = correct_mistakes(txt, spelling_mistakes)
     print('speller:', txt)
 
     params = {'text': txt, 'language': language, 'ai': 0, 'key': CORR_KEY}
     response = requests.get(url="https://api.textgears.com/grammar", params=params)
     grammar_mistakes = response.json()['response']['errors']
+
     txt = correct_mistakes(txt, grammar_mistakes)
     print('grammar:', txt)
 
     res = remove_extra_spaces(txt)
+    print("no extra spaces:", res)
     return res
 
 
@@ -107,8 +89,8 @@ def main():
 
     txt1 = 'На этом примере можно увиддть\n что что исправленея работают харашо но не всеггда.'
     txt2 = 'Helo, howw are yuo?'
-    print('yandex:', yandex_corr(txt1))
-    print('before:', correction(txt1))
+    print('yandex:', correct(txt1))
+    # print('before:', correction(txt1))
 
 
 if __name__ == '__main__':
