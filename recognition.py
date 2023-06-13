@@ -1,5 +1,4 @@
 import cv2
-import json
 import os
 import torch
 import torchvision
@@ -23,12 +22,10 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 TEST_IMAGES_PATH = 'img'
 SAVE_PATH = 'res'
-SEGM_MODEL_PATH = "Models/model_0059999.pth"
-OCR_MODEL_PATH = "Models/baseline_model_self_trained.ckpt"
-# OCR_MODEL_PATH = "Models/cool_model.ckpt"
+SEGM_MODEL_PATH = "Models/SEGMENTATION.pth"
+OCR_MODEL_PATH = "Models/OCR.ckpt"
 
 config_json = {
-    # "alphabet": """@ !"%'()+,-./0123456789:;=?EFIMNOSTW[]abcdefghiklmnopqrstuvwxyАБВГДЕЖЗИКЛМНОПРСТУХЦЧШЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё№""",
     "alphabet": r'!"%\'()*+,-./0123456789:;<=>?ABCDEFGHIJKLMNOPRSTUVWXY['
                 r']_abcdefghijklmnopqrstuvwxyz|}ЁАБВГДЕЖЗИКЛМНОПРСТУФХЦЧШЩЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяё№',
     "image": {
@@ -213,37 +210,7 @@ class BiLSTM(nn.Module):
         return out
 
 
-class RCNN(nn.Module):
-    # def __init__(
-    #         self, number_class_symbols, out_len=32
-    # ):
-    #     super().__init__()
-    #     self.feature_extractor = get_resnet34_backbone()
-    #     self.avg_pool = nn.AdaptiveAvgPool2d(
-    #         (512, out_len))
-    #     self.bilstm = BiLSTM(512, 256, 2)
-    #     self.classifier = nn.Sequential(
-    #         nn.Linear(512, 256),
-    #         nn.GELU(),
-    #         nn.Dropout(0.1),
-    #         nn.Linear(256, number_class_symbols)
-    #     )
-    #
-    # def forward(self, x, return_x=False):
-    #     feature = self.feature_extractor(x)
-    #     b, c, h, w = feature.size()
-    #     feature = feature.view(b, c * h, w)
-    #     feature = self.avg_pool(feature)
-    #     feature = feature.transpose(1, 2)
-    #     out = self.bilstm(feature)
-    #     # print(x.shape)
-    #     out = self.classifier(out)
-    #     x1 = nn.functional.log_softmax(out, dim=2).permute(1, 0, 2)
-    #     if return_x:
-    #         return x1, out
-    #     else:
-    #         return x1
-
+class CRNN(nn.Module):
     def __init__(
             self, number_class_symbols, time_feature_count=256, lstm_hidden=256,
             lstm_len=2,
@@ -304,7 +271,7 @@ class OcrPredictor:
     def __init__(self, model_path, config, device=DEVICE):
         self.tokenizer = Tokenizer(config['alphabet'])
         self.device = torch.device(device)
-        self.model = RCNN(number_class_symbols=self.tokenizer.get_num_chars())
+        self.model = CRNN(number_class_symbols=self.tokenizer.get_num_chars())
         self.model.load_state_dict(torch.load(model_path))
         self.model.to(self.device)
 
@@ -333,7 +300,6 @@ class OcrPredictor:
 
 
 def crop_img_by_polygon(img, polygon):
-    # https://stackoverflow.com/questions/48301186/cropping-concave-polygon-from-image-using-opencv-python
     pts = np.array(polygon)
     rect = cv2.boundingRect(pts)
     x, y, w, h = rect
@@ -450,7 +416,7 @@ class Word:
 
 def intersection_area(a, b):
     """Finds intersection area of two given words."""
-    
+
     x_min1 = a.x
     y_min1 = a.y
     x_max1 = a.x + a.w
@@ -492,7 +458,7 @@ def recognise(read_path, save_path=SAVE_PATH, output_type="easy", draw_type="con
 
     if output_type == "easy":
         easier_output = {'predictions': []}
-        for word in prediction["predictions"]:
+        for word in prediction['predictions']:
             x, y, w, h = cv2.boundingRect(np.array(word["polygon"]))
             easier_output["predictions"].append(Word(x, y, w, h, word["text"]))
         return easier_output
@@ -558,4 +524,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-    
