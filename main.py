@@ -74,7 +74,8 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
                 await start(update, context)
-            except Exception:
+            except Exception as exception:
+                logging.error(exception, exc_info=True)
                 keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
                 await context.bot.send_message(chat_id=user,
                                                text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
@@ -97,7 +98,8 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 res = magic(text=txt, mode=3)
                 await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
                 await start(update, context)
-            except Exception:
+            except Exception as exception:
+                logging.error(exception, exc_info=True)
                 keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
                 await context.bot.send_message(chat_id=user,
                                                text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
