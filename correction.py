@@ -38,6 +38,18 @@ def correct_mistakes(text, mistakes):
     return corrected_text
 
 
+def convert_to_mistakes_format(response):
+    mistakes = []
+    for mistake in response:
+        mistakes.append({
+            'offset': mistake['pos'],
+            'length': mistake['len'],
+            'better': mistake['s'],
+            'type': ''
+        })
+    return mistakes
+
+
 def correct(txt):
     """Finds and corrects mistakes in a given text with YandexSpeller API"""
 
@@ -46,29 +58,22 @@ def correct(txt):
     if language == "en-GB":
         return english_correction(txt)
 
-    response = requests.get(f"https://speller.yandex.net/services/spellservice.json/checkTexts?text={txt}").json()[0]
-
-    spelling_mistakes = []
-    for mistake in response:
-        spelling_mistakes.append({
-            'offset': mistake['pos'],
-            'length': mistake['len'],
-            'better': mistake['s'],
-            'type': ''
-        })
-
-    txt = correct_mistakes(txt, spelling_mistakes)
-    print('speller:', txt)
-
     params = {'text': txt, 'language': language, 'ai': 0, 'key': CORR_KEY}
-    response = requests.get(url="https://api.textgears.com/grammar", params=params)
-    grammar_mistakes = response.json()['response']['errors']
-
+    grammar_mistakes = requests.get(url="https://api.textgears.com/grammar", params=params).json()['response']['errors']
     txt = correct_mistakes(txt, grammar_mistakes)
+
     print('grammar:', txt)
 
+    response = requests.get(f"https://speller.yandex.net/services/spellservice.json/checkTexts?text={txt}").json()[0]
+    spelling_mistakes = convert_to_mistakes_format(response)
+    txt = correct_mistakes(txt, spelling_mistakes)
+
+    print('speller:', txt)
+
     res = remove_extra_spaces(txt)
+    
     print("no extra spaces:", res)
+    
     return res
 
 
