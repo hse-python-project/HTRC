@@ -1,12 +1,10 @@
 import logging
+import os
+import glob
 
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, filters, MessageHandler, CallbackQueryHandler
 from telegram.constants import ChatAction
-
-import os
-import glob
-
 from magic import magic
 
 
@@ -28,8 +26,10 @@ def clear(path):
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
+
     if user not in mode.keys():
         mode[user] = 0
+
     keyboard = []
     message = ['', "Отправь мне картинку с текстом, и я его распознаю и исправлю!",
                "Отправь мне картинку с текстом, и я его распознаю!",
@@ -48,54 +48,60 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
+
     if mode.get(user, 0) == 0:
         await start(update, context)
-    if mode[user] == 3:
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
-        await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте печатный текст или смените режим!",
-                                       reply_markup=keyboard)
     else:
-        try:
-            file_id = update.message.photo[-1].file_id
-            new_file = await context.bot.get_file(file_id)
-            filename = new_file.file_path.split('/')[-1]
-            await new_file.download_to_drive(custom_path=f'img/{filename}')
-
-            await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
-
-            await context.bot.sendChatAction(chat_id=update.message.chat_id, action=ChatAction.TYPING)
-
-            txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
-            print(txt)
-            clear('./img')
-            clear('./res')
-
-            await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
-            await start(update, context)
-        except Exception:
+        if mode[user] == 3:
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
-            await context.bot.send_message(chat_id=user,
-                                           text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+            await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте печатный текст или смените режим!",
                                            reply_markup=keyboard)
+        else:
+            try:
+                file_id = update.message.photo[-1].file_id
+                new_file = await context.bot.get_file(file_id)
+                filename = new_file.file_path.split('/')[-1]
+                await new_file.download_to_drive(custom_path=f'img/{filename}')
+
+                await context.bot.send_message(chat_id=user, text="⏳ Подождите, ваше изображение обрабатывается...")
+
+                await context.bot.sendChatAction(chat_id=update.message.chat_id, action=ChatAction.TYPING)
+
+                txt = magic(filename=f'img/{filename}', mode=mode.get(user, 1))
+                print(txt)
+                clear('./img')
+                clear('./res')
+
+                await context.bot.send_message(chat_id=update.effective_chat.id, text=txt, parse_mode='HTML')
+                await start(update, context)
+            except Exception:
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
+                await context.bot.send_message(chat_id=user,
+                                               text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                               reply_markup=keyboard)
 
 
 async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_chat.id
-    if mode[user] != 3:
-        keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню", callback_data=0)]])
-        await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте картинку или смените режим!",
-                                       reply_markup=keyboard)
+
+    if mode.get(user, 0) == 0:
+        await start(update, context)
     else:
-        try:
-            txt = update.message.text
-            res = magic(text=txt, mode=3)
-            await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
-            await start(update, context)
-        except Exception:
+        if mode[user] != 3:
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
-            await context.bot.send_message(chat_id=user,
-                                           text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+            await context.bot.send_message(chat_id=user, text="Пожалуйста, отправьте картинку или смените режим!",
                                            reply_markup=keyboard)
+        else:
+            try:
+                txt = update.message.text
+                res = magic(text=txt, mode=3)
+                await context.bot.send_message(chat_id=user, text=res, parse_mode='HTML')
+                await start(update, context)
+            except Exception:
+                keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
+                await context.bot.send_message(chat_id=user,
+                                               text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                               reply_markup=keyboard)
 
 
 async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
