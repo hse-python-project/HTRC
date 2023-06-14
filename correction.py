@@ -5,6 +5,8 @@ from langdetect import detect
 ai21.api_key = 'ixlBVyHgdogp531oVryy4uw0hubfWAnf'
 CORR_KEY = 'bOzCJsRYPqLTPwvy'
 
+cyrillic = {'ru', 'be', 'uk', 'bg', 'mk', 'cu', 'ab'}
+
 
 def english_correction(text):
     """Finds and corrects mistakes in a given text in English."""
@@ -53,7 +55,11 @@ def convert_to_mistakes_format(response):
 def correct(txt):
     """Finds and corrects mistakes in a given text with YandexSpeller API"""
 
-    language = "ru-RU" if detect(txt) == "ru" else "en-GB"
+    print('original text:', txt)
+
+    language = "ru-RU" if detect(txt) in cyrillic else "en-GB"
+
+    print('language:', language)
 
     if language == "en-GB":
         return english_correction(txt)
