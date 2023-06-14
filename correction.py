@@ -1,6 +1,7 @@
 import requests
 import ai21
 from langdetect import detect
+import langdetect
 
 ai21.api_key = 'ixlBVyHgdogp531oVryy4uw0hubfWAnf'
 CORR_KEY = 'bOzCJsRYPqLTPwvy'
@@ -57,7 +58,10 @@ def correct(txt):
 
     print('original text:', txt)
 
-    language = "ru-RU" if detect(txt) in cyrillic else "en-GB"
+    try:
+        language = "ru-RU" if detect(txt) in cyrillic else "en-GB"
+    except langdetect.lang_detect_exception.LangDetectException:
+        language = "en-GB"
 
     print('language:', language)
 
@@ -77,9 +81,9 @@ def correct(txt):
     print('speller:', txt)
 
     res = remove_extra_spaces(txt)
-    
+
     print("no extra spaces:", res)
-    
+
     return res
 
 
