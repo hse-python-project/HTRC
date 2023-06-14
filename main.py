@@ -7,10 +7,8 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, filte
 from telegram.constants import ChatAction
 from magic import magic
 
-
 TOKEN = '5631958925:AAGBOxvkn3JTiR2dUAJ59_IL7qMEnNycLOM'
 mode = {}
-
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -78,7 +76,8 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logging.error(exception, exc_info=True)
                 keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
                 await context.bot.send_message(chat_id=user,
-                                               text="Что-то пошло не так. Отправьте другую картинку или попробуйте позже.",
+                                               text="Что-то пошло не так."
+                                                    " Отправьте другую картинку или попробуйте позже.",
                                                reply_markup=keyboard)
 
 
@@ -117,7 +116,6 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-
     application = ApplicationBuilder().token(TOKEN).build()
 
     start_handler = CommandHandler('start', start)
