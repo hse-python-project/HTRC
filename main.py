@@ -78,7 +78,7 @@ async def photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logging.error(exception, exc_info=True)
                 keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
                 await context.bot.send_message(chat_id=user,
-                                               text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                               text="Что-то пошло не так. Отправьте другую картинку или попробуйте позже.",
                                                reply_markup=keyboard)
 
 
@@ -102,7 +102,7 @@ async def text(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 logging.error(exception, exc_info=True)
                 keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("Вернуться в меню ⬅️", callback_data=0)]])
                 await context.bot.send_message(chat_id=user,
-                                               text="Что-то пошло не так. Отправьте другую картинку или вернитесь попозже",
+                                               text="Что-то пошло не так. Отправьте другой текст или попробуйте позже.",
                                                reply_markup=keyboard)
 
 
